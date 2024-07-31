@@ -37,6 +37,7 @@ class Credentials:
 class StartupInfo:
     url = attr.ib()
     credentials = attr.ib()
+    user_agent = attr.ib()
 
 
 @attr.s
@@ -54,8 +55,8 @@ class Process(multiprocessing.Process):
         self.proxy = proxy
         self.display_mode = display_mode
 
-    def authenticate_at(self, url, credentials):
-        self._commands.put(StartupInfo(url, credentials))
+    def authenticate_at(self, url, credentials, user_agent):
+        self._commands.put(StartupInfo(url, credentials, user_agent))
 
     async def get_state_async(self):
         while self.is_alive():
@@ -109,7 +110,9 @@ class Process(multiprocessing.Process):
 
         logger.info("Loading page", url=startup_info.url)
 
-        web.authenticate_at(QUrl(startup_info.url), startup_info.credentials)
+        web.authenticate_at(
+            QUrl(startup_info.url), startup_info.credentials, startup_info.user_agent
+        )
 
         web.show()
         rc = app.exec()
@@ -157,7 +160,7 @@ class WebBrowser(QWebEngineView):
             self._popupWindow = WebPopupWindow(self.page().profile())
             return self._popupWindow.view()
 
-    def authenticate_at(self, url, credentials):
+    def authenticate_at(self, url, credentials, user_agent):
         script_source = pkg_resources.resource_string(__name__, "user.js").decode()
         script = QWebEngineScript()
         script.setInjectionPoint(QWebEngineScript.InjectionPoint.DocumentCreation)
@@ -186,6 +189,9 @@ autoFill();
                 )
                 self.page().scripts().insert(script)
 
+        if user_agent:
+            logger.info("Setting user agent", user_agent=user_agent)
+            self.page().profile().setHttpUserAgent(user_agent)
         self.load(QUrl(url))
 
     def _on_cookie_added(self, cookie):

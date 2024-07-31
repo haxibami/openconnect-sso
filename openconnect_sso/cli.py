@@ -96,6 +96,11 @@ def create_argparser():
     )
 
     parser.add_argument(
+        "--browser-user-agent",
+        help="User-Agent string used by the browser. This is useful when your SSO provider changes its behavior based on the User-Agent string (e.g. Microsoft Entra ID)",
+    )
+
+    parser.add_argument(
         "-l",
         "--log-level",
         help="",
